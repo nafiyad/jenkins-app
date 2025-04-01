@@ -11,20 +11,28 @@ pipeline {
             }
             steps {
                 sh '''
-                echo "===== Environment Info ====="
                 pwd
                 ls -la
                 node --version
                 npm --version
-                
-                echo "===== Installing Dependencies ====="
                 npm install
-                
-                echo "===== Building Application ====="
-                npm run build || { echo "Build failed"; exit 1; }
-                
-                echo "===== Build Output ====="
-                ls -la build
+                npm run build
+                ls -la
+                '''
+            }
+        }
+        
+        stage('Test') {
+            agent {
+                docker {
+                    image 'node:20-alpine'
+                    reuseNode true
+                }
+            }
+            steps {
+                sh '''
+                test -f build/index.html
+                npm test -- --watchAll=false
                 '''
             }
         }
@@ -32,10 +40,10 @@ pipeline {
     
     post {
         success {
-            echo 'Build completed successfully!'
+            echo 'Build and tests completed successfully!'
         }
         failure {
-            echo 'Build failed!'
+            echo 'Build or tests failed.'
         }
     }
-} 
+}
